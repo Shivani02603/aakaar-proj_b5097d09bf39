@@ -1,0 +1,109 @@
+**Project Name:** RAG Document Q&A  
+**Domain:** Data Analysis / Natural Language Processing  
+**Client:** Not specified in BRD  
+**Team Size:** Not specified in BRD  
+**Timeline:** Not specified in BRD  
+**Budget:** Not specified in BRD  
+**Primary Users:** Users who upload Excel files and ask natural-language questions about the data  
+**Tech Constraints:** Python FastAPI (backend), Next.js (frontend), PostgreSQL with pgvector extension, Docker Compose deployment, OpenAI text-embedding-3-small, Google Generative AI SDK (gemini-2.0-flash), pandas
+
+**Project Summary:** This project builds a web application that allows users to upload Excel (.xlsx) files and ask natural-language questions about the data. The system ingests files by parsing them with pandas, chunking the content, embedding chunks with OpenAI, and storing vectors in pgvector. On query, it retrieves relevant chunks via cosine similarity and generates answers with source citations using Google's Gemini model, all within named chat sessions stored in PostgreSQL.
+
+---
+
+## Functional Requirements
+| ID | Module | Requirement | Source Section | Priority |
+|---|---|---|---|---|
+| FR-001 | File Upload | Users can upload Excel (.xlsx) files | Ingestion pipeline | High |
+| FR-002 | File Parsing | System parses each uploaded Excel sheet using pandas | Ingestion pipeline | High |
+| FR-003 | Content Chunking | System splits parsed content into overlapping chunks with chunk size 1000 tokens and overlap 200 tokens | Ingestion pipeline | High |
+| FR-004 | Embedding Generation | System embeds each chunk using text-embedding-3-small (OpenAI) | Ingestion pipeline | High |
+| FR-005 | Vector Storage | System stores vectors in pgvector (PostgreSQL extension) | Ingestion pipeline | High |
+| FR-006 | Query Embedding | On user question, system embeds the query | Query pipeline | High |
+| FR-007 | Vector Retrieval | System retrieves top-5 chunks by cosine similarity from pgvector | Query pipeline | High |
+| FR-008 | Answer Generation | System passes retrieved context + question to gemini-2.0-flash (Google Generative AI SDK) | Query pipeline | High |
+| FR-009 | Source Citations | System returns the answer with source citations including filename and row range | Query pipeline | High |
+| FR-010 | Session Creation | Each user has named chat sessions stored in PostgreSQL | Session management | High |
+| FR-011 | Database Tables | System maintains tables: users, sessions, messages, uploaded_files | Session management | High |
+| FR-012 | Session Switching | Users can create and switch sessions | Session management | High |
+| FR-013 | Conversation History | Users can see full conversation history | Session management | High |
+| FR-014 | File-to-Session Linking | Each uploaded file is linked to a session | Session management | High |
+| FR-015 | Two-Panel Layout | Frontend provides two-panel layout: left panel with file upload and session list, right panel with chat window | Frontend | Medium |
+| FR-016 | Source Citation Display | Source citations are shown below each answer in the chat window | Frontend | Medium |
+| FR-017 | Docker Compose Deployment | System is deployable via Docker Compose with backend, frontend, and postgres services | Deploy | Medium |
+
+Here are the extracted non-functional requirements, constraints, integrations, and gaps/risks from the provided BRD.
+
+### Non-Functional Requirements
+
+| ID | Category | Requirement | Measurable Metric | Source Section |
+|---|---|---|---|---|
+| NFR-001 | Performance | Retrieve top-5 chunks by cosine similarity from pgvector. | Not specified — define before dev | Query pipeline |
+| NFR-002 | Performance | Pass retrieved context + question to gemini-2.0-flash and return the answer. | Not specified — define before dev | Query pipeline |
+| NFR-003 | Scalability | Each user has named chat sessions stored in PostgreSQL. | Not specified — define before dev | Session management |
+| NFR-004 | Scalability | Each uploaded file is linked to a session. | Not specified — define before dev | Session management |
+| NFR-005 | Security | Users can create/switch sessions and see full conversation history. | Not specified — define before dev | Session management |
+| NFR-006 | Usability | Frontend: Next.js with two-panel layout — left panel: file upload + session list; right panel: chat window with source citations shown below each answer. | Not specified — define before dev | Backend: Python FastAPI. Frontend: Next.js... |
+| NFR-007 | Reliability | Deploy: Docker Compose (backend + frontend + postgres services). | Not specified — define before dev | Deploy: Docker Compose... |
+| NFR-008 | Maintainability | Backend: Python FastAPI. | Not specified — define before dev | Backend: Python FastAPI. Frontend: Next.js... |
+| NFR-009 | Maintainability | Frontend: Next.js. | Not specified — define before dev | Backend: Python FastAPI. Frontend: Next.js... |
+| NFR-010 | Maintainability | Database: PostgreSQL with pgvector extension. | Not specified — define before dev | Database: PostgreSQL with pgvector extension. |
+
+### Constraints and Integrations
+
+**Constraints:**
+
+| ID | Type | Description | Impact |
+|---|---|---|---|
+| CON-001 | Technology | Backend must be Python FastAPI. | Limits backend framework choice to FastAPI. |
+| CON-002 | Technology | Frontend must be Next.js. | Limits frontend framework choice to Next.js. |
+| CON-003 | Technology | Database must be PostgreSQL with pgvector extension. | Requires PostgreSQL database with pgvector extension installed. |
+| CON-004 | Technology | Deployment must use Docker Compose (backend + frontend + postgres services). | Requires containerization and orchestration via Docker Compose. |
+| CON-005 | Technology | Embedding model must be text-embedding-3-small (OpenAI). | Requires OpenAI API access and key. |
+| CON-006 | Technology | LLM must be gemini-2.0-flash (Google Generative AI SDK). | Requires Google Generative AI API access and key. |
+| CON-007 | Technology | File uploads must be Excel (.xlsx) files. | Limits file format to .xlsx. |
+| CON-008 | Technology | Chunk size must be 1000 tokens. | Defines a fixed chunk size for text splitting. |
+| CON-009 | Technology | Chunk overlap must be 200 tokens. | Defines a fixed chunk overlap for text splitting. |
+| CON-010 | Technology | Retrieval must return top-5 chunks by cosine similarity. | Defines a fixed retrieval count and similarity metric. |
+
+**Integrations:**
+
+| ID | System | Purpose | Priority | Notes |
+|---|---|---|---|---|
+| INT-001 | OpenAI (text-embedding-3-small) | Embed each chunk for vector storage. | High | Requires API key and network access. |
+| INT-002 | Google Generative AI (gemini-2.0-flash) | Generate answers from retrieved context and user question. | High | Requires API key and network access. |
+| INT-003 | PostgreSQL (pgvector) | Store vectors, user data, sessions, messages, and uploaded files. | High | Core data store; must be deployed and accessible. |
+
+### Gaps and Risks
+
+| ID | Type | Description | Question for Client | Risk if Unresolved |
+|---|---|---|---|---|
+| GAP-001 | Missing | No authentication or authorization mechanism is specified. | How will users be authenticated and authorized? | Unauthorized access to data and sessions; security vulnerability. |
+| GAP-002 | Missing | No error handling or logging strategy is defined. | What is the expected error handling and logging approach? | Difficult debugging, poor user experience on failures, system instability. |
+| GAP-003 | Missing | No data retention or deletion policy is specified. | What is the data retention policy for uploaded files, sessions, and messages? | Potential data privacy/compliance issues; storage bloat. |
+| GAP-004 | Missing | No performance or latency requirements are defined (e.g., max response time). | What are the acceptable response times for query and ingestion? | User dissatisfaction; system may not meet business needs. |
+| GAP-005 | Missing | No concurrency or user load requirements are specified. | How many concurrent users should the system support? | System may fail under expected load; scalability issues. |
+| GAP-006 | Missing | No backup or disaster recovery plan is mentioned. | What is the backup and disaster recovery strategy? | Data loss risk; extended downtime. |
+| GAP-007 | Missing | No mention of API rate limiting or cost management for external APIs (OpenAI, Google). | How will API costs and rate limits be managed? | Unexpected costs; service disruption due to rate limiting. |
+| GAP-008 | Missing | No specification for handling large Excel files (e.g., file size limits, streaming). | What is the maximum file size allowed? How should large files be handled? | Performance degradation; out-of-memory errors. |
+| GAP-009 | Missing | No mention of testing strategy (unit, integration, performance). | What is the expected testing approach? | Poor code quality; undetected bugs; unreliable system. |
+| GAP-010 | Missing | No mention of accessibility or internationalization (i18n) requirements. | Are there any accessibility or language requirements? | Excludes users with disabilities; limits global use. |
+| GAP-011 | Ambiguity | "Each user has named chat sessions" — unclear how users are identified without authentication. | How are users identified and managed without authentication? | Inconsistent user experience; potential data mixing. |
+| GAP-012 | Ambiguity | "Source citations (filename, row range)" — unclear how row range is determined for Excel data. | How is the row range for source citations calculated? | Incorrect or missing citations; user confusion. |
+| GAP-013 | Technical Risk | Reliance on two external APIs (OpenAI, Google) introduces dependency and potential single points of failure. | What is the fallback plan if one or both APIs are unavailable? | Complete system outage if either API is down. |
+| GAP-014 | Technical Risk | pgvector performance with large datasets is not specified. | What is the expected vector database size and query performance? | Slow retrieval; poor user experience at scale. |
+# AI layer dependencies
+google-generativeai>=0.8.0
+numpy==1.26.2
+openai==1.3.7
+openpyxl>=3.1.2
+pandas==2.1.3
+pgvector>=0.2.0
+sqlalchemy
+alembic
+fastapi
+python-jose
+passlib
+pydantic
+langchain
+psycopg2-binary
