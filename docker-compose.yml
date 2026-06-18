@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d
+    environment:
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: appdb
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U appuser']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - '8000:8000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://appuser:secret@postgres:5432/appdb
+      JWT_SECRET: changeme_in_prod
+      PORT: 8000
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+    volumes:
+      - model_cache:/root/.cache/huggingface
+      - uploads:/app/uploads
+    restart: unless-stopped
+    networks:
+      - app-network
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8000/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - '3000:3000'
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    restart: unless-stopped
+    networks:
+      - app-network
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  postgres_data:
+    driver: local
+  model_cache:
+    driver: local
+  uploads:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
